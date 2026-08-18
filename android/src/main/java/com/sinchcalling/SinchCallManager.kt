@@ -1,6 +1,7 @@
 package com.sinchcalling
 
 import android.content.Context
+import android.os.PowerManager
 import com.sinch.android.rtc.AudioController
 import com.sinch.android.rtc.ClientRegistration
 import com.sinch.android.rtc.PushConfiguration
@@ -66,6 +67,13 @@ class SinchCallManager(private val context: Context) {
   private var customPushIdField: String? = null
   private var customPushDisplayField: String? = null
 
+  // Proximity-screen-off during an established earpiece call, same as the
+  // system Phone app: on while at least one call is established and the
+  // speaker isn't in use, off otherwise.
+  private val establishedCallIds = mutableSetOf<String>()
+  private var isSpeakerEnabled = false
+  private var proximityWakeLock: PowerManager.WakeLock? = null
+
   private val callListener = object : CallListener {
     override fun onCallProgressing(call: Call) {
       listener?.onCallProgressing(call.callId)
@@ -73,11 +81,15 @@ class SinchCallManager(private val context: Context) {
 
     override fun onCallEstablished(call: Call) {
       SinchTelecomManager.reportCallActive(call.callId)
+      establishedCallIds.add(call.callId)
+      updateProximityMonitoring()
       listener?.onCallEstablished(call.callId)
     }
 
     override fun onCallEnded(call: Call) {
       calls.remove(call.callId)
+      establishedCallIds.remove(call.callId)
+      updateProximityMonitoring()
       SinchTelecomManager.reportCallEnded(call.callId)
       listener?.onCallEnded(call.callId, endCauseString(call.details.endCause))
     }
@@ -216,6 +228,9 @@ class SinchCallManager(private val context: Context) {
     client?.terminateGracefully()
     client = null
     calls.clear()
+    establishedCallIds.clear()
+    isSpeakerEnabled = false
+    releaseProximityWakeLock()
   }
 
   fun provideRegistrationCredentials(jwt: String) {
@@ -293,6 +308,36 @@ class SinchCallManager(private val context: Context) {
   fun setSpeakerEnabled(enabled: Boolean) {
     val audioController = client?.audioController ?: return
     if (enabled) audioController.enableSpeaker() else audioController.disableSpeaker()
+    isSpeakerEnabled = enabled
+    updateProximityMonitoring()
+  }
+
+  private fun updateProximityMonitoring() {
+    val shouldEnable = establishedCallIds.isNotEmpty() && !isSpeakerEnabled
+    if (shouldEnable) acquireProximityWakeLock() else releaseProximityWakeLock()
+  }
+
+  private fun acquireProximityWakeLock() {
+    val lock = proximityWakeLock ?: run {
+      val powerManager =
+        context.applicationContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
+          ?: return
+      if (!powerManager.isWakeLockLevelSupported(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
+        return
+      }
+      @Suppress("DEPRECATION")
+      powerManager.newWakeLock(
+        PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK,
+        "SinchCalling:ProximityWakeLock",
+      ).also { proximityWakeLock = it }
+    }
+    if (!lock.isHeld) {
+      lock.acquire(10 * 60 * 1000L)
+    }
+  }
+
+  private fun releaseProximityWakeLock() {
+    proximityWakeLock?.let { if (it.isHeld) it.release() }
   }
 
   private fun track(call: Call) {

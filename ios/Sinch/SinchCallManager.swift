@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import SinchRTC
+import UIKit
 
 @objc public protocol SinchCallManagerDelegate: AnyObject {
   func sinchCallManagerDidStartClient()
@@ -38,6 +39,14 @@ public final class SinchCallManager: NSObject {
   private var pendingRegistration: SINClientRegistration?
   private var calls: [String: SINCall] = [:]
 
+  // Proximity-screen-off during an established earpiece call, same as the
+  // system Phone app: on while at least one call is established and the
+  // speaker isn't in use, off otherwise. Tracked here (rather than exposed
+  // as a public API) since both established-call state and speaker state
+  // already live in this class.
+  private var establishedCallIds = Set<String>()
+  private var isSpeakerEnabled = false
+
   @objc public func configure(appKey: String, environmentHost: String, userId: String) {
     do {
       let sinchClient = try Sinch.client(
@@ -62,6 +71,9 @@ public final class SinchCallManager: NSObject {
     client?.terminateGracefully()
     client = nil
     calls.removeAll()
+    establishedCallIds.removeAll()
+    isSpeakerEnabled = false
+    updateProximityMonitoring()
   }
 
   @objc public func provideRegistrationCredentials(_ jwt: String) {
@@ -129,6 +141,15 @@ public final class SinchCallManager: NSObject {
     } else {
       client?.audioController().disableSpeaker()
     }
+    isSpeakerEnabled = enabled
+    updateProximityMonitoring()
+  }
+
+  private func updateProximityMonitoring() {
+    let shouldEnable = !establishedCallIds.isEmpty && !isSpeakerEnabled
+    DispatchQueue.main.async {
+      UIDevice.current.isProximityMonitoringEnabled = shouldEnable
+    }
   }
 
   @objc public func enableManagedPushNotifications() {
@@ -185,11 +206,15 @@ extension SinchCallManager: SINCallDelegate {
   }
 
   public func callDidEstablish(_ call: SINCall) {
+    establishedCallIds.insert(call.callId)
+    updateProximityMonitoring()
     delegate?.sinchCallManagerCallDidEstablish(call.callId)
   }
 
   public func callDidEnd(_ call: SINCall) {
     calls.removeValue(forKey: call.callId)
+    establishedCallIds.remove(call.callId)
+    updateProximityMonitoring()
     delegate?.sinchCallManagerCallDidEnd(call.callId, endCause: endCauseString(call.details.endCause))
   }
 }
