@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.3.0
+
+### Added
+
+- Automatic proximity-screen-off management during established earpiece calls, same behavior as the system Phone app: on while a call is `ESTABLISHED` and the speaker is off, off otherwise (speaker toggle or call end). Handled entirely inside `SinchCallManager` on both platforms — no new public API.
+
 ## 0.2.0
 
 ### Added
