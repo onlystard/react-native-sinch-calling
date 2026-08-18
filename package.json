@@ -48,14 +48,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tristian-tan/react-native-sinch-calling.git"
+    "url": "git+https://github.com/onlystard/react-native-sinch-calling.git"
   },
-  "author": "tristian.pham <tristian.pham@techvify.com.vn> (https://github.com/tristian-tan)",
+  "author": "tristian.pham <tristian.pham@techvify.com.vn> (https://github.com/onlystard)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/tristian-tan/react-native-sinch-calling/issues"
+    "url": "https://github.com/onlystard/react-native-sinch-calling/issues"
   },
-  "homepage": "https://github.com/tristian-tan/react-native-sinch-calling#readme",
+  "homepage": "https://github.com/onlystard/react-native-sinch-calling#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
