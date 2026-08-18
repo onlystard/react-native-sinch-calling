@@ -1,5 +1,5 @@
 #import <SinchCallingSpec/SinchCallingSpec.h>
 
-@interface SinchCalling : NSObject <NativeSinchCallingSpec>
+@interface SinchCalling : NativeSinchCallingSpecBase <NativeSinchCallingSpec>
 
 @end
