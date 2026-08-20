@@ -50,7 +50,7 @@ npm install react-native-sinch-calling
   </array>
   ```
 - Enable the **Push Notifications** capability in Xcode (adds `aps-environment` to your entitlements) — required for `enablePushNotifications()`.
-- **Strongly recommended**: call `+[SinchCalling eagerlyRegisterForVoipPush]` as the first line of `application(_:didFinishLaunchingWithOptions:)` in your `AppDelegate` (native, not exposed to JS — see [Registering for VoIP push before React Native boots](#registering-for-voip-push-before-react-native-boots)). Registering only from JS via `enablePushNotifications()` means a killed app has no `PKPushRegistry` set up yet at the moment iOS relaunches it to deliver a VoIP push, so it may fail to ring.
+- **Strongly recommended**: call `+[SinchCallingBootstrap eagerlyRegisterForVoipPush]` as the first line of `application(_:didFinishLaunchingWithOptions:)` in your `AppDelegate` (native, not exposed to JS — see [Registering for VoIP push before React Native boots](#registering-for-voip-push-before-react-native-boots)). Registering only from JS via `enablePushNotifications()` means a killed app has no `PKPushRegistry` set up yet at the moment iOS relaunches it to deliver a VoIP push, so it may fail to ring.
 
 ### Android
 
@@ -135,7 +135,7 @@ func application(
   _ application: UIApplication,
   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
 ) -> Bool {
-  SinchCalling.eagerlyRegisterForVoipPush()
+  SinchCallingBootstrap.eagerlyRegisterForVoipPush()
 
   // ... start React Native as usual
   return true

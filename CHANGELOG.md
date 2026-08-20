@@ -2,7 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
-## 0.7.0
+## Unreleased
+
+### Fixed
+
+- Making `SinchCalling.h` public (0.6.1) fixed the missing-symbol error but broke the build a different way: that header pulls in the Codegen-generated `SinchCallingSpec.h`, which requires Objective-C++ — fine for the `.mm` files that already imported it internally, but Clang errors (`Could not build Objective-C module 'SinchCalling'`, `'utility' file not found`, `This file must be compiled as Obj-C++`) trying to build it as this pod's *public* Swift-facing module interface. Moved the one thing that actually needs to be public — `eagerlyRegisterForVoipPush` — onto a new, separate `SinchCallingBootstrap` class with its own header that has no dependency on `SinchCallingSpec.h` at all. `SinchCalling.h` goes back to private.
+
+### Changed
+
+- **Breaking (native-only, not exposed to JS):** call `SinchCallingBootstrap.eagerlyRegisterForVoipPush()` instead of `SinchCalling.eagerlyRegisterForVoipPush()` from `AppDelegate`.
+
+## 0.6.1
 
 ### Fixed
 
