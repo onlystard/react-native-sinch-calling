@@ -80,6 +80,11 @@
   [_pushManager configureCustomIncomingCallPushWithIdField:idField displayField:displayField];
 }
 
+- (void)configureCustomCancelCallPush:(NSString *)typeField cancelValue:(NSString *)cancelValue
+{
+  [_pushManager configureCustomCancelCallPushWithTypeField:typeField cancelValue:cancelValue];
+}
+
 - (void)reportIncomingCallUI:(NSString *)callId displayName:(NSString *)displayName
 {
   [_callKitManager reportExternalIncomingCall:callId displayName:displayName];
@@ -226,6 +231,12 @@
 {
   [_callKitManager reportExternalIncomingCall:callId displayName:displayName];
   [self emitOnIncomingCallUIShown:@{ @"callId" : callId, @"displayName" : displayName }];
+}
+
+- (void)sinchPushManagerDidDetectCustomCancelCall:(NSString *)callId
+{
+  [_callKitManager reportCallEnded:callId];
+  [self emitOnIncomingCallUICancelled:@{ @"callId" : callId }];
 }
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:

@@ -7,6 +7,7 @@ import NativeSinchCalling, {
   type CallUIAnsweredEvent,
   type CallUIDeclinedEvent,
   type IncomingCallUIEvent,
+  type IncomingCallUICancelledEvent,
   type VoipPushTokenEvent,
 } from './NativeSinchCalling';
 import type {
@@ -163,6 +164,19 @@ class SinchCalling {
   }
 
   /**
+   * Opts into recognizing your own backend's cancel/end push payloads, on
+   * both platforms — e.g. `configureCustomCancelCallPush('type', 'call_cancelled')`
+   * for a payload shaped `{ type: 'call_cancelled', callId, ... }`. Checked
+   * before the `configureCustomIncomingCallPush` id-field match, so a push
+   * carrying both the id field and this cancel marker ends the already-shown
+   * call UI instead of being reported as a new incoming call. Has no effect
+   * until `configureCustomIncomingCallPush` has also been called.
+   */
+  configureCustomCancelCallPush(typeField: string, cancelValue: string): void {
+    NativeSinchCalling.configureCustomCancelCallPush(typeField, cancelValue);
+  }
+
+  /**
    * Reports a system call UI (CallKit / Telecom) for a call your own app
    * logic decided to show — from a custom push, a Socket.IO event, or
    * anything else. Independent of `configureCustomIncomingCallPush`; call
@@ -239,6 +253,18 @@ class SinchCalling {
     listener: (event: CallUIDeclinedEvent) => void
   ): EventSubscription {
     return NativeSinchCalling.onCallUIDeclined(listener);
+  }
+
+  /**
+   * A configured cancel push (see `configureCustomCancelCallPush`) arrived
+   * for a call previously shown via a configured custom incoming-call push.
+   * The system call UI has already been torn down natively by the time this
+   * fires — use it to clean up any app-side state keyed by `callId`.
+   */
+  onIncomingCallUICancelled(
+    listener: (event: IncomingCallUICancelledEvent) => void
+  ): EventSubscription {
+    return NativeSinchCalling.onIncomingCallUICancelled(listener);
   }
 }
 

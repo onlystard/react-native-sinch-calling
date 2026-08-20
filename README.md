@@ -160,6 +160,21 @@ SinchCalling.onCallUIAnswered(async ({ callId }) => {
 SinchCalling.onCallUIDeclined(({ callId }) => {
   declineOnYourBackend(callId);
 });
+
+// If your backend can also cancel/end a call that's already ringing on this
+// device (caller hung up, answered on another device, forwarded elsewhere,
+// etc.), it needs a way to tell a "cancel" push apart from a "new call" push
+// — reusing the same `idField` for both (a natural design, since both need
+// to say which call they're about) would otherwise make every cancel push
+// look like a new incoming call. Configure the field/value your backend
+// uses to mark a cancel, e.g. `{ type: "call_cancelled", callId, reason }`:
+SinchCalling.configureCustomCancelCallPush('type', 'call_cancelled');
+
+// Fires once a cancel push has ended the system call UI natively — clean up
+// any app-side state keyed by `callId` (a pending caller-ID lookup, etc.).
+SinchCalling.onIncomingCallUICancelled(({ callId }) => {
+  cleanUpPendingCallState(callId);
+});
 ```
 
 This is the one place iOS can't be fully "hands off": Apple requires every VoIP push to synchronously trigger a CallKit report from inside the native push handler, so the payload-shape check happens natively (using the field names you configured) rather than round-tripping through JS first.
@@ -210,12 +225,13 @@ SinchCalling.onClientStartFailed(({ code }) => {
 | `enablePushNotifications(useProductionAps)` | iOS | No-op on Android |
 | `relayRemotePushNotification(payload)` | Android | No-op on iOS |
 | `configureCustomIncomingCallPush(idField, displayField)` | both | Opt-in — see [Custom incoming-call flows](#custom-incoming-call-flows) |
+| `configureCustomCancelCallPush(typeField, cancelValue)` | both | Opt-in — distinguishes a cancel/end push from a new-call push, see [Custom incoming-call flows](#custom-incoming-call-flows) |
 | `reportIncomingCallUI(callId, displayName)` | both | Shows a call UI for any reason you decide to |
 | `resolveCallUIToConference(callId, conferenceId, callerId)` → `callId` | both | Turns a shown call UI into a real call |
 | `dismissCallUI(callId)` | both | Cleans up a call UI that couldn't be resolved |
 | `updateIncomingCallDisplayName(callId, displayName)` | both | Overrides the shown caller name |
 
-Events: `onClientStarted`, `onClientStartFailed`, `onRegistrationCredentialsRequired` (internal — handled by `setRegistrationCredentialsProvider`), `onIncomingCall`, `onCallProgressing`, `onCallEstablished`, `onCallEnded`, `onPushTokenRegistered`, `onPushTokenRegistrationFailed`, `onVoipPushTokenUpdated` (iOS — forward to your backend), `onIncomingCallUIShown`, `onCallUIAnswered`, `onCallUIDeclined`.
+Events: `onClientStarted`, `onClientStartFailed`, `onRegistrationCredentialsRequired` (internal — handled by `setRegistrationCredentialsProvider`), `onIncomingCall`, `onCallProgressing`, `onCallEstablished`, `onCallEnded`, `onPushTokenRegistered`, `onPushTokenRegistrationFailed`, `onVoipPushTokenUpdated` (iOS — forward to your backend), `onIncomingCallUIShown`, `onCallUIAnswered`, `onCallUIDeclined`, `onIncomingCallUICancelled`.
 
 ## Known limitations
 

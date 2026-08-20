@@ -81,6 +81,10 @@ class SinchCallingModule(reactContext: ReactApplicationContext) :
       override fun onCallUIDeclined(callId: String) {
         emitOnCallUIDeclined(Arguments.createMap().apply { putString("callId", callId) })
       }
+
+      override fun onIncomingCallUICancelled(callId: String) {
+        emitOnIncomingCallUICancelled(Arguments.createMap().apply { putString("callId", callId) })
+      }
     }
   }
 
@@ -118,6 +122,10 @@ class SinchCallingModule(reactContext: ReactApplicationContext) :
 
   override fun configureCustomIncomingCallPush(idField: String, displayField: String) {
     callManager.configureCustomIncomingCallPush(idField, displayField)
+  }
+
+  override fun configureCustomCancelCallPush(typeField: String, cancelValue: String) {
+    callManager.configureCustomCancelCallPush(typeField, cancelValue)
   }
 
   override fun reportIncomingCallUI(callId: String, displayName: String) {

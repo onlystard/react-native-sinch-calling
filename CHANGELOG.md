@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.4.0
+
+### Added
+
+- `configureCustomCancelCallPush(typeField, cancelValue)` — opt in to recognizing your backend's cancel/end push payloads (e.g. `{ type: "call_cancelled", callId, ... }`), so a push carrying the configured cancel marker ends the already-shown call UI (`reportCallEnded` / `SinchTelecomManager.reportCallEnded`) instead of being reported as a new incoming call.
+- `onIncomingCallUICancelled` event, fired once the cancel push has been handled and the system call UI torn down, so app code can clean up any state keyed by `callId`.
+
+### Fixed
+
+- Previously, a "cancel this call" push reusing the same `idField` as the configured incoming-call push (a natural payload design, since both need to identify which call they're about) was indistinguishable from a genuinely new incoming call — the push handler only checked for the id field's presence, so cancel pushes rang as phantom incoming calls instead of dismissing the real one.
+
 ## 0.3.0
 
 ### Added

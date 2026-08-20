@@ -40,6 +40,10 @@ interface SinchCallManagerListener {
   fun onIncomingCallUIShown(callId: String, displayName: String)
   fun onCallUIAnswered(callId: String)
   fun onCallUIDeclined(callId: String)
+
+  // A configured cancel push was detected for a call already reported via
+  // `onIncomingCallUIShown` — see `configureCustomCancelCallPush`.
+  fun onIncomingCallUICancelled(callId: String)
 }
 
 private fun endCauseString(endCause: CallEndCause): String = when (endCause) {
@@ -66,6 +70,8 @@ class SinchCallManager(private val context: Context) {
   private val calls = mutableMapOf<String, Call>()
   private var customPushIdField: String? = null
   private var customPushDisplayField: String? = null
+  private var customCancelTypeField: String? = null
+  private var customCancelValue: String? = null
 
   // Proximity-screen-off during an established earpiece call, same as the
   // system Phone app: on while at least one call is established and the
@@ -135,10 +141,29 @@ class SinchCallManager(private val context: Context) {
     customPushDisplayField = displayField
   }
 
+  // Opts into recognizing a cancel/end push shaped like the configured
+  // incoming-call push but carrying `typeField == cancelValue` — e.g. the
+  // backend reuses the same `idField` but sets `type: "call_cancelled"`
+  // instead of `"incoming_call"`. Checked before the incoming-call match in
+  // `relayRemotePushNotification`, so a payload satisfying both is treated
+  // as a cancel.
+  fun configureCustomCancelCallPush(typeField: String, cancelValue: String) {
+    customCancelTypeField = typeField
+    customCancelValue = cancelValue
+  }
+
   fun relayRemotePushNotification(payload: Map<String, String>) {
     val idField = customPushIdField
     val callId = idField?.let { payload[it] }
     if (callId != null) {
+      val typeField = customCancelTypeField
+      val cancelValue = customCancelValue
+      if (typeField != null && cancelValue != null && payload[typeField] == cancelValue) {
+        SinchTelecomManager.reportCallEnded(callId)
+        listener?.onIncomingCallUICancelled(callId)
+        return
+      }
+
       val displayName = customPushDisplayField?.let { payload[it] } ?: ""
       reportIncomingCallUI(callId, displayName)
       return

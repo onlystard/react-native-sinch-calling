@@ -37,6 +37,10 @@ export interface IncomingCallUIEvent {
   displayName: string;
 }
 
+export interface IncomingCallUICancelledEvent {
+  callId: string;
+}
+
 export interface Spec extends TurboModule {
   configure(appKey: string, environmentHost: string, userId: string): void;
   start(): void;
@@ -88,6 +92,16 @@ export interface Spec extends TurboModule {
   // relay to Sinch (the library's default, backend-agnostic behavior).
   configureCustomIncomingCallPush(idField: string, displayField: string): void;
 
+  // Opts into recognizing your own backend's cancel/end push payloads —
+  // e.g. `configureCustomCancelCallPush("type", "call_cancelled")` for a
+  // payload shaped `{ type: "call_cancelled", callId, ... }`. Checked before
+  // the `configureCustomIncomingCallPush` id-field match, so a push carrying
+  // both the id field and this cancel marker ends the already-shown call UI
+  // instead of being reported as a new incoming call. Has no effect until
+  // `configureCustomIncomingCallPush` has also been called (there'd be no
+  // `callId` field to key off of otherwise).
+  configureCustomCancelCallPush(typeField: string, cancelValue: string): void;
+
   // Reports a system call UI (CallKit / Telecom) for a call your own app
   // logic decided to show — from a custom push, a Socket.IO event, or
   // anything else. Not tied to any particular transport: call this directly
@@ -136,6 +150,13 @@ export interface Spec extends TurboModule {
   // was auto-detected (see `configureCustomIncomingCallPush`). Useful for
   // e.g. kicking off a caller-ID lookup the moment a call starts ringing.
   onIncomingCallUIShown: CodegenTypes.EventEmitter<IncomingCallUIEvent>;
+
+  // A configured cancel push (see `configureCustomCancelCallPush`) arrived
+  // for a call previously shown via a configured custom incoming-call push.
+  // The system call UI has already been torn down natively by the time this
+  // fires — use it to clean up any app-side state keyed by `callId` (e.g. a
+  // pending caller-ID lookup).
+  onIncomingCallUICancelled: CodegenTypes.EventEmitter<IncomingCallUICancelledEvent>;
 
   // The system call UI shown via `reportIncomingCallUI` (or a configured
   // custom push) was answered/declined. Handle these however your backend

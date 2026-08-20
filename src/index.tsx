@@ -8,4 +8,5 @@ export type {
   CallEvent,
   ClientStartFailedEvent,
   IncomingCallEvent,
+  IncomingCallUICancelledEvent,
 } from './NativeSinchCalling';
