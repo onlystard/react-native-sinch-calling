@@ -15,7 +15,11 @@ Pod::Spec.new do |s|
 
   s.swift_version = "5.0"
   s.source_files = "ios/**/*.{h,m,mm,swift,cpp}"
-  s.private_header_files = "ios/**/*.h"
+  # `SinchCalling.h` (the only header in this pod) must stay public — the
+  # RN TurboModule bridge itself doesn't need this (it dispatches via the
+  # ObjC runtime, not compile-time imports), but `eagerlyRegisterForVoipPush`
+  # is meant to be called directly from a consumer app's native AppDelegate
+  # via `import SinchCalling`, which only sees public headers.
 
   s.dependency "SinchRTC"
 

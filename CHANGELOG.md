@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.7.0
+
+### Fixed
+
+- `SinchCalling.eagerlyRegisterForVoipPush()` (added in 0.6.0) was unreachable from a consumer app's Swift code (`Module 'SinchCalling' has no member named 'eagerlyRegisterForVoipPush'`) — the podspec marked its only header (`SinchCalling.h`) as private, which hid it from anything outside this pod's own target. The RN TurboModule bridge never needed it public (it dispatches via the ObjC runtime), but a plain `import SinchCalling` from an app's `AppDelegate` does.
+
 ## 0.6.0
 
 ### Added
