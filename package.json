@@ -1,6 +1,6 @@
 {
   "name": "react-native-sinch-calling",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "React Native TurboModule wrapper for Sinch Voice Calling SDK (Android & iOS)",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
