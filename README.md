@@ -50,6 +50,7 @@ npm install react-native-sinch-calling
   </array>
   ```
 - Enable the **Push Notifications** capability in Xcode (adds `aps-environment` to your entitlements) — required for `enablePushNotifications()`.
+- **Strongly recommended**: call `+[SinchCalling eagerlyRegisterForVoipPush]` as the first line of `application(_:didFinishLaunchingWithOptions:)` in your `AppDelegate` (native, not exposed to JS — see [Registering for VoIP push before React Native boots](#registering-for-voip-push-before-react-native-boots)). Registering only from JS via `enablePushNotifications()` means a killed app has no `PKPushRegistry` set up yet at the moment iOS relaunches it to deliver a VoIP push, so it may fail to ring.
 
 ### Android
 
@@ -120,6 +121,32 @@ const callId = SinchCalling.callConference('conf_abc123', '+14155550100');
 // Send DTMF tones on an active call (0-9, #, *, A-D).
 SinchCalling.sendDTMF(callId, '5');
 ```
+
+### Registering for VoIP push before React Native boots
+
+`SinchCalling.enablePushNotifications()` (JS) only runs once the RN bundle has loaded, your app's state has rehydrated, and your code decides to call it — often well after your session/login logic runs. That's fine while the app is already running, but it's too late for the one case VoIP push exists for: iOS relaunching your app from **killed** purely to deliver a push. If `PKPushRegistry` isn't already registered by the time that happens, the call can't be reported and the launch is wasted.
+
+On iOS, register natively instead, as the first line of `application(_:didFinishLaunchingWithOptions:)` — before React Native starts:
+
+```swift
+import SinchCalling
+
+func application(
+  _ application: UIApplication,
+  didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+) -> Bool {
+  SinchCalling.eagerlyRegisterForVoipPush()
+
+  // ... start React Native as usual
+  return true
+}
+```
+
+This is a native-only entry point (not exposed to JS) that registers `PKPushRegistry` and configures the same custom incoming/cancel-call push fields as `configureCustomIncomingCallPush`/`configureCustomCancelCallPush` (hardcoded to `"callId"`/`"callerNumber"` and `"type"`/`"call_cancelled"` — update it in `SinchCalling.mm` if your backend's payload uses different field names). It's safe to also still call the JS APIs later — they operate on the same shared native objects, so nothing gets double-registered.
+
+Picks `useProductionAps` automatically from the build configuration (`#if DEBUG`) rather than a JS-supplied flag, since it runs before any JS exists.
+
+Android is different in kind, not necessarily gap-free: FCM data messages delivered while the app is killed run through RN Firebase's headless JS task mechanism (`setBackgroundMessageHandler`), which starts a fresh JS engine/bridge specifically to handle that one message — independent of whether your app has "launched" in the normal sense. But that also means it's a fresh native module instance too: if `configureCustomIncomingCallPush`/`configureCustomCancelCallPush` are only called from your app's normal boot sequence (e.g. after checking a login token), that boot sequence may never run in this headless context, leaving those fields unconfigured for that invocation. If you see the same "doesn't ring when killed" symptom on Android, call `configureCustomIncomingCallPush`/`configureCustomCancelCallPush` directly inside your `setBackgroundMessageHandler` callback (before forwarding to `relayRemotePushNotification`), not only from your app's regular init path.
 
 ### Custom incoming-call flows
 

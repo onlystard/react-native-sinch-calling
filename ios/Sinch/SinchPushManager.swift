@@ -7,10 +7,14 @@ import SinchRTC
   // A configured custom incoming-call push was detected — distinct from a
   // Sinch-relayed push (e.g. an app-to-app incoming call), which is instead
   // forwarded straight to the Sinch client and surfaces as `onIncomingCall`.
+  // The system call UI has already been reported by the time this fires
+  // (see `callKitManager` below) — this is purely for observers (e.g. the
+  // JS bridge) that want to react, such as kicking off a caller-ID lookup.
   func sinchPushManagerDidDetectCustomIncomingCall(_ callId: String, displayName: String)
   // A configured cancel push was detected for a call already reported via
   // `sinchPushManagerDidDetectCustomIncomingCall` — see
-  // `configureCustomCancelCallPush`.
+  // `configureCustomCancelCallPush`. The call UI has already been ended by
+  // the time this fires.
   func sinchPushManagerDidDetectCustomCancelCall(_ callId: String)
 }
 
@@ -20,19 +24,26 @@ import SinchRTC
 // `configureCustomIncomingCallPush`, payloads containing both configured
 // fields are instead reported as an external incoming call and skip the
 // Sinch relay for that push.
+//
+// Reports directly to `callKitManager` (rather than only notifying
+// `delegate`) so a killed app can ring from a cold launch triggered by the
+// push itself, before React Native has booted and any delegate/JS bridge
+// exists to receive it — see `SinchCalling.eagerlyRegisterForVoipPush`.
 @objc(SinchPushManager)
 public final class SinchPushManager: NSObject {
   @objc public weak var delegate: SinchPushManagerDelegate?
 
   private weak var callManager: SinchCallManager?
+  private weak var callKitManager: SinchCallKitManager?
   private var registry: PKPushRegistry?
   private var customIdField: String?
   private var customDisplayField: String?
   private var customCancelTypeField: String?
   private var customCancelValue: String?
 
-  @objc public init(callManager: SinchCallManager) {
+  @objc public init(callManager: SinchCallManager, callKitManager: SinchCallKitManager) {
     self.callManager = callManager
+    self.callKitManager = callKitManager
     super.init()
   }
 
@@ -93,9 +104,11 @@ extension SinchPushManager: PKPushRegistryDelegate {
         let typeValue = dict[typeField] as? String,
         typeValue == cancelValue
       {
+        callKitManager?.reportCallEnded(callId)
         delegate?.sinchPushManagerDidDetectCustomCancelCall(callId)
       } else {
         let displayName = customDisplayField.flatMap { dict[$0] as? String } ?? ""
+        callKitManager?.reportExternalIncomingCall(callId, displayName: displayName)
         delegate?.sinchPushManagerDidDetectCustomIncomingCall(callId, displayName: displayName)
       }
     } else {

@@ -11,20 +11,55 @@
 @interface SinchCalling () <SinchCallManagerDelegate, SinchCallKitManagerDelegate, SinchPushManagerDelegate>
 @end
 
+// Shared across every `SinchCalling` instance in the process, and reachable
+// before any instance exists at all via `+eagerlyRegisterForVoipPush` — see
+// that method and `SinchPushManager`'s header comment for why: VoIP push
+// registration and CallKit reporting must work even when the app is woken
+// from killed purely by the incoming push, before React Native (and this
+// TurboModule instance) has been created.
+static SinchCallManager *sSharedCallManager = nil;
+static SinchPushManager *sSharedPushManager = nil;
+static SinchCallKitManager *sSharedCallKitManager = nil;
+
+static void SinchCallingEnsureSharedManagers(void)
+{
+  if (sSharedCallManager != nil) {
+    return;
+  }
+  sSharedCallManager = [SinchCallManager new];
+  sSharedCallKitManager = [SinchCallKitManager new];
+  sSharedPushManager = [[SinchPushManager alloc] initWithCallManager:sSharedCallManager
+                                                       callKitManager:sSharedCallKitManager];
+}
+
 @implementation SinchCalling {
   SinchCallManager *_callManager;
   SinchPushManager *_pushManager;
   SinchCallKitManager *_callKitManager;
 }
 
++ (void)eagerlyRegisterForVoipPush
+{
+  SinchCallingEnsureSharedManagers();
+#if DEBUG
+  BOOL useProductionAps = NO;
+#else
+  BOOL useProductionAps = YES;
+#endif
+  [sSharedPushManager enableWithUseProductionAps:useProductionAps];
+  [sSharedPushManager configureCustomIncomingCallPushWithIdField:@"callId" displayField:@"callerNumber"];
+  [sSharedPushManager configureCustomCancelCallPushWithTypeField:@"type" cancelValue:@"call_cancelled"];
+}
+
 - (instancetype)init
 {
   if (self = [super init]) {
-    _callManager = [SinchCallManager new];
+    SinchCallingEnsureSharedManagers();
+    _callManager = sSharedCallManager;
+    _pushManager = sSharedPushManager;
+    _callKitManager = sSharedCallKitManager;
     _callManager.delegate = self;
-    _pushManager = [[SinchPushManager alloc] initWithCallManager:_callManager];
     _pushManager.delegate = self;
-    _callKitManager = [SinchCallKitManager new];
     _callKitManager.delegate = self;
   }
   return self;
@@ -229,13 +264,13 @@
 
 - (void)sinchPushManagerDidDetectCustomIncomingCall:(NSString *)callId displayName:(NSString *)displayName
 {
-  [_callKitManager reportExternalIncomingCall:callId displayName:displayName];
+  // `SinchPushManager` already reported this to CallKit directly (works
+  // even before this instance/delegate exists) — just relay to JS.
   [self emitOnIncomingCallUIShown:@{ @"callId" : callId, @"displayName" : displayName }];
 }
 
 - (void)sinchPushManagerDidDetectCustomCancelCall:(NSString *)callId
 {
-  [_callKitManager reportCallEnded:callId];
   [self emitOnIncomingCallUICancelled:@{ @"callId" : callId }];
 }
 

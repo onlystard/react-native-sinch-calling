@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.0
+
+### Added
+
+- `SinchCalling.eagerlyRegisterForVoipPush()` (iOS, native — not exposed to JS). Call it as the first line of `application(_:didFinishLaunchingWithOptions:)` to register `PKPushRegistry` and configure the custom incoming/cancel-call push fields immediately, independent of React Native. Without this, VoIP push registration only happened once the JS bridge called `enablePushNotifications()` deep into app bootstrap (after the RN bundle loaded, state rehydrated, etc.) — too late for the app to reliably report a call when iOS relaunches it from killed purely to deliver that push.
+
+### Changed
+
+- `SinchPushManager` (iOS) now reports directly to `SinchCallKitManager` for a detected custom incoming/cancel push, instead of only notifying its delegate (which the JS-driven `SinchCalling` TurboModule instance implements). This means CallKit gets its report even if the delegate/JS bridge doesn't exist yet — the delegate now exists purely to notify JS (e.g. for a caller-ID lookup), not to perform the report itself.
+- `SinchCallManager`, `SinchPushManager`, and `SinchCallKitManager` (iOS) are now shared singletons across the process rather than per-`SinchCalling`-instance, so the eager native call above and the later JS-driven TurboModule instance operate on the same `PKPushRegistry`/`CXProvider` instead of each creating their own (a single `PKPushRegistry` only supports one delegate per push type).
+
 ## 0.5.0
 
 ### Added
