@@ -197,12 +197,14 @@ class SinchCallManager(private val context: Context) {
       return
     }
 
-    sinchClient.audioController.enableAutomaticAudioRouting(
-      AudioController.AudioRoutingConfig(AudioController.UseSpeakerphone.SPEAKERPHONE_AUTO, true)
-    )
-
     sinchClient.addSinchClientListener(object : SinchClientListener {
       override fun onClientStarted(client: SinchClient) {
+        // `audioController` throws `IllegalStateException: SinchClient not
+        // started` if touched before this callback — it's only valid once
+        // the client has actually started, not right after `build()`.
+        client.audioController.enableAutomaticAudioRouting(
+          AudioController.AudioRoutingConfig(AudioController.UseSpeakerphone.SPEAKERPHONE_AUTO, true)
+        )
         listener?.onClientStarted()
       }
 
