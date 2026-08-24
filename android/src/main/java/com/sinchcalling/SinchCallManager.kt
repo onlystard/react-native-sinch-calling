@@ -69,10 +69,6 @@ class SinchCallManager(private val context: Context) {
   private var pendingRegistration: ClientRegistration? = null
   private var pendingPushConfiguration: PushConfiguration? = null
   private val calls = mutableMapOf<String, Call>()
-  private var customPushIdField: String? = null
-  private var customPushDisplayField: String? = null
-  private var customCancelTypeField: String? = null
-  private var customCancelValue: String? = null
 
   // Proximity-screen-off during an established earpiece call, same as the
   // system Phone app: on while at least one call is established and the
@@ -136,10 +132,11 @@ class SinchCallManager(private val context: Context) {
 
   // Opts into recognizing the consumer app's own backend's incoming-call
   // push payloads. Until called, every payload is relayed straight to
-  // Sinch (see `relayRemotePushNotification`).
+  // Sinch (see `relayRemotePushNotification`). Delegates to
+  // `SinchTelecomManager` — see its header comment for why this state
+  // doesn't live here.
   fun configureCustomIncomingCallPush(idField: String, displayField: String) {
-    customPushIdField = idField
-    customPushDisplayField = displayField
+    SinchTelecomManager.configureCustomIncomingCallPush(idField, displayField)
   }
 
   // Opts into recognizing a cancel/end push shaped like the configured
@@ -149,23 +146,22 @@ class SinchCallManager(private val context: Context) {
   // `relayRemotePushNotification`, so a payload satisfying both is treated
   // as a cancel.
   fun configureCustomCancelCallPush(typeField: String, cancelValue: String) {
-    customCancelTypeField = typeField
-    customCancelValue = cancelValue
+    SinchTelecomManager.configureCustomCancelCallPush(typeField, cancelValue)
   }
 
   fun relayRemotePushNotification(payload: Map<String, String>) {
-    val idField = customPushIdField
+    val idField = SinchTelecomManager.customPushIdField
     val callId = idField?.let { payload[it] }
     if (callId != null) {
-      val typeField = customCancelTypeField
-      val cancelValue = customCancelValue
+      val typeField = SinchTelecomManager.customCancelTypeField
+      val cancelValue = SinchTelecomManager.customCancelValue
       if (typeField != null && cancelValue != null && payload[typeField] == cancelValue) {
         SinchTelecomManager.reportCallEnded(callId)
         listener?.onIncomingCallUICancelled(callId)
         return
       }
 
-      val displayName = customPushDisplayField?.let { payload[it] } ?: ""
+      val displayName = SinchTelecomManager.customPushDisplayField?.let { payload[it] } ?: ""
       reportIncomingCallUI(callId, displayName)
       return
     }

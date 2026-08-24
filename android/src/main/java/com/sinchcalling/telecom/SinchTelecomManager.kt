@@ -34,6 +34,33 @@ object SinchTelecomManager {
   // below so they don't all need a `Context` param just to cancel a notification.
   private var appContext: Context? = null
 
+  // Lives here rather than on `SinchCallManager` so `SinchCallingBootstrap`
+  // can configure it before any `SinchCallManager`/TurboModule instance
+  // exists — see that class's header comment for why that matters.
+  internal var customPushIdField: String? = null
+    private set
+  internal var customPushDisplayField: String? = null
+    private set
+  internal var customCancelTypeField: String? = null
+    private set
+  internal var customCancelValue: String? = null
+    private set
+
+  // Opts into recognizing the consumer app's own backend's incoming-call
+  // push payloads. Until called, every payload is relayed straight to Sinch
+  // (see `SinchCallManager.relayRemotePushNotification`).
+  fun configureCustomIncomingCallPush(idField: String, displayField: String) {
+    customPushIdField = idField
+    customPushDisplayField = displayField
+  }
+
+  // Opts into recognizing a cancel/end push shaped like the configured
+  // incoming-call push but carrying `typeField == cancelValue`.
+  fun configureCustomCancelCallPush(typeField: String, cancelValue: String) {
+    customCancelTypeField = typeField
+    customCancelValue = cancelValue
+  }
+
   fun phoneAccountHandle(context: Context): PhoneAccountHandle {
     val componentName = ComponentName(context, SinchConnectionService::class.java)
     return PhoneAccountHandle(componentName, ACCOUNT_ID)
