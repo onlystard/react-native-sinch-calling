@@ -186,6 +186,16 @@ class SinchCallingModule(reactContext: ReactApplicationContext) :
     callManager.relayRemotePushNotification(data)
   }
 
+  override fun configureIncomingCallNotification(config: ReadableMap) {
+    callManager.configureIncomingCallNotification(
+      enabled = if (config.hasKey("enabled")) config.getBoolean("enabled") else null,
+      title = if (config.hasKey("title")) config.getString("title") else null,
+      answerLabel = if (config.hasKey("answerLabel")) config.getString("answerLabel") else null,
+      declineLabel = if (config.hasKey("declineLabel")) config.getString("declineLabel") else null,
+      smallIconName = if (config.hasKey("smallIconName")) config.getString("smallIconName") else null
+    )
+  }
+
   companion object {
     const val NAME = NativeSinchCallingSpec.NAME
   }

@@ -224,6 +224,34 @@ messaging().onMessage(async (remoteMessage) => {
 
 This only works while the app **process** is alive (backgrounded, not killed) — the JS runtime has to be running to receive the FCM callback. iOS doesn't have this limitation: VoIP push wakes the app process via PushKit even when fully killed.
 
+### Customizing the Android incoming-call notification
+
+A `PhoneAccount.CAPABILITY_SELF_MANAGED` connection — what this library uses under the hood on Android — gets no system-drawn incoming-call screen the way iOS gets from CallKit; Android only tracks call/audio-focus state for it. So the library posts its own notification (title, Answer/Decline actions, a full-screen intent so it's visible over the lock screen). Customize or disable it with `configureIncomingCallNotification`:
+
+```ts
+import { SinchCalling } from 'react-native-sinch-calling';
+
+SinchCalling.configureIncomingCallNotification({
+  title: 'Incoming call',
+  answerLabel: 'Answer',
+  declineLabel: 'Decline',
+  // Name of a drawable resource in your own app, resolved via
+  // `Resources.getIdentifier` — falls back to your app's launcher icon if
+  // omitted or not found.
+  smallIconName: 'ic_call_notification',
+});
+```
+
+Call this once during setup, before any call can ring. It's persisted natively (`SharedPreferences`), not just held in JS state — so it still applies to a call that arrives before JS has started again (e.g. the process was killed and only woken up to relay the push).
+
+Already have your own incoming-call UI and don't want this notification at all? Opt out with `enabled: false` — the underlying self-managed connection (audio routing, Bluetooth, Android Auto, etc.) still registers either way, only the notification is skipped:
+
+```ts
+SinchCalling.configureIncomingCallNotification({ enabled: false });
+```
+
+Tapping the notification body (or its full-screen intent when the device is locked) opens your app's own launcher activity with a `callId` extra — same as any other push notification tap — so your existing navigation/deep-link handling decides what screen to show. Tapping Answer/Decline, by contrast, is handled entirely at the native Telecom layer (via `SinchTelecomManager`, same as a Bluetooth headset button would be) and works even before your JS has started.
+
 ### Retrying after a failure
 
 The SDK doesn't expose a distinct "reconnecting" callback — only `onClientStartFailed` (client-level) and `onCallEnded` with `endCause: 'error'` (call-level). Both events include a `code` (native error code) you can use to decide whether to retry:
@@ -257,6 +285,7 @@ SinchCalling.onClientStartFailed(({ code }) => {
 | `resolveCallUIToConference(callId, conferenceId, callerId)` → `callId` | both | Turns a shown call UI into a real call |
 | `dismissCallUI(callId)` | both | Cleans up a call UI that couldn't be resolved |
 | `updateIncomingCallDisplayName(callId, displayName)` | both | Overrides the shown caller name |
+| `configureIncomingCallNotification({ enabled?, title?, answerLabel?, declineLabel?, smallIconName? })` | Android | Customizes — or disables — the incoming-call notification self-managed connections require on Android; see [Customizing the Android incoming-call notification](#customizing-the-android-incoming-call-notification). No-op on iOS |
 
 Events: `onClientStarted`, `onClientStartFailed`, `onRegistrationCredentialsRequired` (internal — handled by `setRegistrationCredentialsProvider`), `onIncomingCall`, `onCallProgressing`, `onCallEstablished`, `onCallEnded`, `onPushTokenRegistered`, `onPushTokenRegistrationFailed`, `onVoipPushTokenUpdated` (iOS — forward to your backend), `onIncomingCallUIShown`, `onCallUIAnswered`, `onCallUIDeclined`, `onIncomingCallUICancelled`.
 

@@ -128,6 +128,17 @@ export interface Spec extends TurboModule {
   // reported as the handle.
   updateIncomingCallDisplayName(callId: string, displayName: string): void;
 
+  // Android only. Customizes — or disables — the incoming-call notification
+  // that self-managed Telecom connections require on Android (see
+  // `SinchIncomingCallNotification`); no-op on iOS, which uses CallKit's own
+  // system UI instead. Persisted natively (SharedPreferences), so it still
+  // applies to a call that arrives before JS has started again — e.g. the
+  // process was killed and only woken up to relay the incoming-call push.
+  // Call once during setup, before any call can ring. Shape (all fields
+  // optional): `{ enabled?, title?, answerLabel?, declineLabel?, smallIconName? }`
+  // — see `IncomingCallNotificationConfig` in `SinchCalling.ts`.
+  configureIncomingCallNotification(config: Object): void;
+
   onClientStarted: CodegenTypes.EventEmitter<void>;
   onClientStartFailed: CodegenTypes.EventEmitter<ClientStartFailedEvent>;
   onRegistrationCredentialsRequired: CodegenTypes.EventEmitter<void>;

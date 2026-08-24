@@ -15,6 +15,7 @@ import com.sinch.android.rtc.calling.CallControllerListener
 import com.sinch.android.rtc.calling.CallEndCause
 import com.sinch.android.rtc.calling.CallListener
 import com.sinch.android.rtc.calling.MediaConstraints
+import com.sinchcalling.telecom.SinchIncomingCallNotification
 import com.sinchcalling.telecom.SinchTelecomListener
 import com.sinchcalling.telecom.SinchTelecomManager
 import java.io.IOException
@@ -249,6 +250,18 @@ class SinchCallManager(private val context: Context) {
 
   fun start() {
     client?.start()
+  }
+
+  // `null` for a given param leaves that setting as previously configured
+  // (or the default) — see `SinchIncomingCallNotification.configure`.
+  fun configureIncomingCallNotification(
+    enabled: Boolean?,
+    title: String?,
+    answerLabel: String?,
+    declineLabel: String?,
+    smallIconName: String?
+  ) {
+    SinchIncomingCallNotification.configure(context, enabled, title, answerLabel, declineLabel, smallIconName)
   }
 
   fun stop() {

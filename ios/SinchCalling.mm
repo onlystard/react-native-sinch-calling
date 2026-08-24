@@ -149,6 +149,11 @@ static void SinchCallingEnsureSharedManagers(void)
   [_callKitManager updateCallerDisplayName:callId displayName:displayName];
 }
 
+- (void)configureIncomingCallNotification:(NSDictionary *)config
+{
+  // Android only — iOS uses CallKit's own system UI, nothing to customize here.
+}
+
 - (void)answerCall:(NSString *)callId
 {
   [_callManager answerCall:callId];

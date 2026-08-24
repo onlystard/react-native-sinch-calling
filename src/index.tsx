@@ -1,4 +1,5 @@
 export { default as SinchCalling } from './SinchCalling';
+export type { IncomingCallNotificationConfig } from './SinchCalling';
 export type {
   RegistrationCredentialsProvider,
   SinchClientConfig,

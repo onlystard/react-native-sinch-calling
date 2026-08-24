@@ -15,6 +15,27 @@ import type {
   SinchClientConfig,
 } from './types';
 
+export interface IncomingCallNotificationConfig {
+  /**
+   * Set to `false` to opt out of the notification entirely — e.g. if you
+   * already have your own incoming-call UI solution. Defaults to `true`.
+   * Android only; ignored on iOS (which uses CallKit's own system UI).
+   */
+  enabled?: boolean;
+  /** Defaults to "Incoming call". */
+  title?: string;
+  /** Defaults to "Answer". */
+  answerLabel?: string;
+  /** Defaults to "Decline". */
+  declineLabel?: string;
+  /**
+   * Name of a drawable resource in your own app (e.g. "ic_call_notification"),
+   * resolved via `Resources.getIdentifier`. Falls back to your app's launcher
+   * icon if omitted or not found.
+   */
+  smallIconName?: string;
+}
+
 class SinchCalling {
   private credentialsProviderSubscription: EventSubscription | null = null;
 
@@ -221,6 +242,20 @@ class SinchCalling {
   /** Overrides the caller name shown on the system call UI (e.g. after a caller-ID lookup resolves). */
   updateIncomingCallDisplayName(callId: string, displayName: string): void {
     NativeSinchCalling.updateIncomingCallDisplayName(callId, displayName);
+  }
+
+  /**
+   * Android only. Customizes — or disables — the incoming-call notification
+   * that self-managed Telecom connections require on Android — title,
+   * Answer/Decline labels, icon. Persisted natively, so it applies even to a
+   * call that arrives before JS has started again (e.g. the process was
+   * killed and only woken up to relay the incoming-call push) — call this
+   * once during setup, before any call can ring. No-op on iOS.
+   */
+  configureIncomingCallNotification(
+    config: IncomingCallNotificationConfig
+  ): void {
+    NativeSinchCalling.configureIncomingCallNotification(config);
   }
 
   /** iOS only: hex-encoded PushKit VoIP token, issued on start and on rotation. */
