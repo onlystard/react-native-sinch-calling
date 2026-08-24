@@ -104,10 +104,11 @@ export interface Spec extends TurboModule {
   // reason (e.g. `{ type: "call_cancelled", callId, reason: "FORWARDED" }`),
   // naming that field here lets a "forwarded" cancel be told apart from any
   // other reason (declined, hung up, answered elsewhere, ...), which
-  // `onIncomingCallUICancelled` doesn't otherwise distinguish. Android only,
-  // for now — the missed/forwarded notice this drives is a heads-up
-  // notification shown natively when the app is backgrounded/killed; iOS's
-  // system call screen has no equivalent yet.
+  // `onIncomingCallUICancelled` doesn't otherwise distinguish. Drives a
+  // missed/forwarded notice on both platforms once the ringing call UI ends:
+  // a heads-up notification on Android, a local notification on iOS (since
+  // CallKit's system call screen just disappears with no explanation
+  // otherwise).
   configureCustomCancelCallPush(
     typeField: string,
     cancelValue: string,

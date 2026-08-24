@@ -195,11 +195,12 @@ SinchCalling.onCallUIDeclined(({ callId }) => {
 // to say which call they're about) would otherwise make every cancel push
 // look like a new incoming call. Configure the field/value your backend
 // uses to mark a cancel, e.g. `{ type: "call_cancelled", callId, reason }`.
-// The optional 3rd arg (Android only) names the field carrying *why* it was
-// cancelled — when it's `"FORWARDED"`, Android leaves behind a distinct
+// The optional 3rd arg names the field carrying *why* it was cancelled —
+// when it's `"FORWARDED"`, both platforms leave behind a distinct
 // "call forwarded" notice instead of a plain "missed call" once the ringing
-// notification is torn down, so the rep isn't left wondering why the phone
-// stopped ringing.
+// call UI is torn down, so the rep isn't left wondering why the phone
+// stopped ringing (a heads-up notification on Android, a local notification
+// on iOS).
 SinchCalling.configureCustomCancelCallPush('type', 'call_cancelled', 'reason');
 
 // Fires once a cancel push has ended the system call UI natively — clean up
@@ -307,7 +308,7 @@ SinchCalling.onClientStartFailed(({ code }) => {
 | `enablePushNotifications(useProductionAps)` | iOS | No-op on Android |
 | `relayRemotePushNotification(payload)` | Android | No-op on iOS |
 | `configureCustomIncomingCallPush(idField, displayField)` | both | Opt-in — see [Custom incoming-call flows](#custom-incoming-call-flows) |
-| `configureCustomCancelCallPush(typeField, cancelValue, reasonField?)` | both | Opt-in — distinguishes a cancel/end push from a new-call push, see [Custom incoming-call flows](#custom-incoming-call-flows). `reasonField` is Android-only, drives the missed/forwarded notice |
+| `configureCustomCancelCallPush(typeField, cancelValue, reasonField?)` | both | Opt-in — distinguishes a cancel/end push from a new-call push, see [Custom incoming-call flows](#custom-incoming-call-flows). `reasonField` drives a missed/forwarded notice on both platforms |
 | `reportIncomingCallUI(callId, displayName)` | both | Shows a call UI for any reason you decide to |
 | `resolveCallUIToConference(callId, conferenceId, callerId)` → `callId` | both | Turns a shown call UI into a real call |
 | `dismissCallUI(callId)` | both | Cleans up a call UI that couldn't be resolved |

@@ -1747,7 +1747,7 @@ PODS:
     - React-utils (= 0.85.0)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.85.0)
-  - SinchCalling (0.1.0):
+  - SinchCalling (0.9.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2078,7 +2078,7 @@ SPEC CHECKSUMS:
   ReactCodegen: b3184a229afd01e7f8058dd81b805b843caa2bf9
   ReactCommon: fe2a3af8975e63efa60f95fca8c34dc85deee360
   ReactNativeDependencies: 3eb3c41eb85c339f3810fe7e48bdc4468e768f4f
-  SinchCalling: ee934f766d5275de04561f8ffc3ee7f125844ea6
+  SinchCalling: 38db5fde02fed0963c0c6326871f6dc83299da26
   SinchRTC: 9d4409415139d7b898f95eead96b47ee418f030a
   Yoga: e83c3121d079541e69f3c5c623faaaf933fb5812
 

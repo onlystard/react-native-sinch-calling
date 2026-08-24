@@ -48,7 +48,7 @@ static void SinchCallingEnsureSharedManagers(void)
 #endif
   [sSharedPushManager enableWithUseProductionAps:useProductionAps];
   [sSharedPushManager configureCustomIncomingCallPushWithIdField:@"callId" displayField:@"callerNumber"];
-  [sSharedPushManager configureCustomCancelCallPushWithTypeField:@"type" cancelValue:@"call_cancelled"];
+  [sSharedPushManager configureCustomCancelCallPushWithTypeField:@"type" cancelValue:@"call_cancelled" reasonField:@"reason"];
 }
 
 - (instancetype)init
@@ -117,10 +117,9 @@ static void SinchCallingEnsureSharedManagers(void)
 
 - (void)configureCustomCancelCallPush:(NSString *)typeField cancelValue:(NSString *)cancelValue reasonField:(NSString *)reasonField
 {
-  // `reasonField` drives Android's missed-vs-forwarded notice (see that
-  // platform's SinchTelecomManager) — iOS has no equivalent yet, since a
-  // cancelled call there just ends the already-visible CallKit screen.
-  [_pushManager configureCustomCancelCallPushWithTypeField:typeField cancelValue:cancelValue];
+  // `reasonField` drives a missed-vs-forwarded local notification posted via
+  // SinchMissedCallNotifier once the already-visible CallKit screen ends.
+  [_pushManager configureCustomCancelCallPushWithTypeField:typeField cancelValue:cancelValue reasonField:reasonField];
 }
 
 - (void)reportIncomingCallUI:(NSString *)callId displayName:(NSString *)displayName

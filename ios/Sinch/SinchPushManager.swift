@@ -40,6 +40,11 @@ public final class SinchPushManager: NSObject {
   private var customDisplayField: String?
   private var customCancelTypeField: String?
   private var customCancelValue: String?
+  private var customCancelReasonField: String?
+  // The reported-call display name only carries the caller name for as long
+  // as it's ringing — captured here so a later cancel push can put a name to
+  // the missed/forwarded notice instead of just "Unknown".
+  private var displayNames: [String: String] = [:]
 
   @objc public init(callManager: SinchCallManager, callKitManager: SinchCallKitManager) {
     self.callManager = callManager
@@ -66,10 +71,17 @@ public final class SinchPushManager: NSObject {
   // backend reuses the same `idField` but sets `type: "call_cancelled"`
   // instead of `"incoming_call"`. Checked before the incoming-call match in
   // `didReceiveIncomingPushWith`, so a push satisfying both is treated as a
-  // cancel.
-  @objc public func configureCustomCancelCallPush(typeField: String, cancelValue: String) {
+  // cancel. `reasonField` is optional — if the payload carries one (e.g.
+  // "FORWARDED" vs anything else), it drives the missed/forwarded notice
+  // posted via `SinchMissedCallNotifier`.
+  @objc public func configureCustomCancelCallPush(
+    typeField: String,
+    cancelValue: String,
+    reasonField: String? = nil
+  ) {
     customCancelTypeField = typeField
     customCancelValue = cancelValue
+    customCancelReasonField = reasonField
   }
 }
 
@@ -105,9 +117,13 @@ extension SinchPushManager: PKPushRegistryDelegate {
         typeValue == cancelValue
       {
         callKitManager?.reportCallEnded(callId)
+        let reason = customCancelReasonField.flatMap { dict[$0] as? String }
+        let displayName = displayNames.removeValue(forKey: callId)
+        SinchMissedCallNotifier.postCancelledNotice(callId: callId, reason: reason, displayName: displayName)
         delegate?.sinchPushManagerDidDetectCustomCancelCall(callId)
       } else {
         let displayName = customDisplayField.flatMap { dict[$0] as? String } ?? ""
+        displayNames[callId] = displayName
         callKitManager?.reportExternalIncomingCall(callId, displayName: displayName)
         delegate?.sinchPushManagerDidDetectCustomIncomingCall(callId, displayName: displayName)
       }

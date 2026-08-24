@@ -193,12 +193,11 @@ class SinchCalling {
    * call UI instead of being reported as a new incoming call. Has no effect
    * until `configureCustomIncomingCallPush` has also been called.
    *
-   * `reasonField` (Android only) — if your payload also carries a reason
-   * (e.g. `{ ..., reason: 'FORWARDED' }`), naming that field here makes
-   * Android show a distinct "call forwarded" vs "missed call" heads-up
-   * notification instead of just silently dismissing the ringing one.
-   * iOS ignores this; its cancel just ends the CallKit screen already
-   * showing, with no equivalent notice.
+   * `reasonField` — if your payload also carries a reason (e.g.
+   * `{ ..., reason: 'FORWARDED' }`), naming that field here makes both
+   * platforms show a distinct "call forwarded" vs "missed call" notice
+   * (a heads-up notification on Android, a local notification on iOS)
+   * instead of just silently dismissing the ringing call UI.
    */
   configureCustomCancelCallPush(
     typeField: string,
