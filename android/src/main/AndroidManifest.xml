@@ -6,6 +6,11 @@
   <uses-permission android:name="android.permission.BLUETOOTH" />
   <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <!-- Self-managed ConnectionService calls get no system-provided incoming-call
+       UI — we post our own notification (see SinchIncomingCallNotification)
+       with a full-screen intent so it's visible over the lock screen, as
+       Android's own docs for CAPABILITY_SELF_MANAGED require. -->
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
   <application>
     <service
@@ -16,5 +21,11 @@
         <action android:name="android.telecom.ConnectionService" />
       </intent-filter>
     </service>
+
+    <!-- Answer/Decline tapped on the incoming-call notification — handled at
+         the native Telecom layer so it works even before JS has started. -->
+    <receiver
+      android:name="com.sinchcalling.telecom.SinchCallActionReceiver"
+      android:exported="false" />
   </application>
 </manifest>

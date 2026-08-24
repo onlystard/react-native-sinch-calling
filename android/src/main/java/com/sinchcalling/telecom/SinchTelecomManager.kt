@@ -29,6 +29,10 @@ object SinchTelecomManager {
 
   private val connections = mutableMapOf<String, SinchConnection>()
   private val externallyReportedCallIds = mutableSetOf<String>()
+  // Set once from `registerPhoneAccount` (always called first, from
+  // `SinchCallManager`'s constructor) — reused by the call-lifecycle methods
+  // below so they don't all need a `Context` param just to cancel a notification.
+  private var appContext: Context? = null
 
   fun phoneAccountHandle(context: Context): PhoneAccountHandle {
     val componentName = ComponentName(context, SinchConnectionService::class.java)
@@ -36,6 +40,7 @@ object SinchTelecomManager {
   }
 
   fun registerPhoneAccount(context: Context) {
+    appContext = context.applicationContext
     val telecomManager = context.getSystemService(TelecomManager::class.java) ?: return
     val account = PhoneAccount.builder(phoneAccountHandle(context), "SinchCalling")
       .setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)
@@ -50,6 +55,20 @@ object SinchTelecomManager {
       putString(EXTRA_REMOTE_USER_ID, remoteUserId)
     }
     telecomManager.addNewIncomingCall(phoneAccountHandle(context), extras)
+    SinchIncomingCallNotification.show(context, callId, remoteUserId)
+  }
+
+  // Answer/Decline tapped on our own incoming-call notification (see
+  // `SinchIncomingCallNotification`/`SinchCallActionReceiver`) — calling
+  // these `Connection` callbacks directly (rather than only ever receiving
+  // them from the framework) mirrors what the OS would do on our behalf if a
+  // Bluetooth headset or Android Auto button were pressed instead.
+  fun answerCall(callId: String) {
+    connections[callId]?.onAnswer()
+  }
+
+  fun declineCall(callId: String) {
+    connections[callId]?.onReject()
   }
 
   // A call the consumer app decided to show a system call UI for (a custom
@@ -75,16 +94,23 @@ object SinchTelecomManager {
     connection.callId = newCallId
     connections[newCallId] = connection
     externallyReportedCallIds.remove(oldCallId)
+    // The ringing notification was shown keyed by `oldCallId` — from here on
+    // `reportCallActive`/`reportCallEnded` only know about `newCallId`, so it
+    // would otherwise never get cancelled.
+    appContext?.let { SinchIncomingCallNotification.cancel(it, oldCallId) }
   }
 
   // Overrides the caller name shown on the system call UI (e.g. once a
-  // caller-ID lookup resolves).
+  // caller-ID lookup resolves) — and on our own notification, so the rep
+  // doesn't keep seeing the raw phone number once it's resolved.
   fun updateCallerDisplayName(callId: String, displayName: String) {
     connections[callId]?.setCallerDisplayName(displayName, TelecomManager.PRESENTATION_ALLOWED)
+    appContext?.let { SinchIncomingCallNotification.show(it, callId, displayName) }
   }
 
   fun reportCallActive(callId: String) {
     connections[callId]?.setActive()
+    appContext?.let { SinchIncomingCallNotification.cancel(it, callId) }
   }
 
   fun reportCallEnded(callId: String) {
@@ -94,6 +120,7 @@ object SinchTelecomManager {
     }
     connections.remove(callId)
     externallyReportedCallIds.remove(callId)
+    appContext?.let { SinchIncomingCallNotification.cancel(it, callId) }
   }
 
   internal fun registerConnection(callId: String, connection: SinchConnection) {
@@ -102,5 +129,6 @@ object SinchTelecomManager {
 
   internal fun unregisterConnection(callId: String) {
     connections.remove(callId)
+    appContext?.let { SinchIncomingCallNotification.cancel(it, callId) }
   }
 }
