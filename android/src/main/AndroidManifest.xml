@@ -12,6 +12,13 @@
        Android's own docs for CAPABILITY_SELF_MANAGED require. -->
   <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
+  <!-- Android 14+ requires a foreground service of these types to keep
+       capturing microphone audio once the app is backgrounded during an
+       active call — see SinchCallForegroundService. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
   <application>
     <service
       android:name="com.sinchcalling.telecom.SinchConnectionService"
@@ -21,6 +28,11 @@
         <action android:name="android.telecom.ConnectionService" />
       </intent-filter>
     </service>
+
+    <service
+      android:name="com.sinchcalling.telecom.SinchCallForegroundService"
+      android:exported="false"
+      android:foregroundServiceType="phoneCall|microphone" />
 
     <!-- Answer/Decline tapped on the incoming-call notification — handled at
          the native Telecom layer so it works even before JS has started. -->

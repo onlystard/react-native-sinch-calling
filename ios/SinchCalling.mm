@@ -115,8 +115,11 @@ static void SinchCallingEnsureSharedManagers(void)
   [_pushManager configureCustomIncomingCallPushWithIdField:idField displayField:displayField];
 }
 
-- (void)configureCustomCancelCallPush:(NSString *)typeField cancelValue:(NSString *)cancelValue
+- (void)configureCustomCancelCallPush:(NSString *)typeField cancelValue:(NSString *)cancelValue reasonField:(NSString *)reasonField
 {
+  // `reasonField` drives Android's missed-vs-forwarded notice (see that
+  // platform's SinchTelecomManager) — iOS has no equivalent yet, since a
+  // cancelled call there just ends the already-visible CallKit screen.
   [_pushManager configureCustomCancelCallPushWithTypeField:typeField cancelValue:cancelValue];
 }
 
@@ -152,6 +155,18 @@ static void SinchCallingEnsureSharedManagers(void)
 - (void)configureIncomingCallNotification:(NSDictionary *)config
 {
   // Android only — iOS uses CallKit's own system UI, nothing to customize here.
+}
+
+- (BOOL)isFullScreenIntentPermissionGranted
+{
+  // Android only — this whole permission concept doesn't exist on iOS,
+  // which uses CallKit's own system UI (no equivalent revocable permission).
+  return YES;
+}
+
+- (void)requestFullScreenIntentPermission
+{
+  // Android only — no-op on iOS, see isFullScreenIntentPermissionGranted.
 }
 
 - (void)answerCall:(NSString *)callId

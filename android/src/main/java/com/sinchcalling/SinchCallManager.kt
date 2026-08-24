@@ -145,8 +145,8 @@ class SinchCallManager(private val context: Context) {
   // instead of `"incoming_call"`. Checked before the incoming-call match in
   // `relayRemotePushNotification`, so a payload satisfying both is treated
   // as a cancel.
-  fun configureCustomCancelCallPush(typeField: String, cancelValue: String) {
-    SinchTelecomManager.configureCustomCancelCallPush(typeField, cancelValue)
+  fun configureCustomCancelCallPush(typeField: String, cancelValue: String, reasonField: String? = null) {
+    SinchTelecomManager.configureCustomCancelCallPush(typeField, cancelValue, reasonField)
   }
 
   fun relayRemotePushNotification(payload: Map<String, String>) {
@@ -156,7 +156,8 @@ class SinchCallManager(private val context: Context) {
       val typeField = SinchTelecomManager.customCancelTypeField
       val cancelValue = SinchTelecomManager.customCancelValue
       if (typeField != null && cancelValue != null && payload[typeField] == cancelValue) {
-        SinchTelecomManager.reportCallEnded(callId)
+        val reason = SinchTelecomManager.customCancelReasonField?.let { payload[it] }
+        SinchTelecomManager.reportCallCancelled(callId, reason)
         listener?.onIncomingCallUICancelled(callId)
         return
       }

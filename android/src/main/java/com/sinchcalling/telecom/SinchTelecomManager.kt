@@ -45,6 +45,8 @@ object SinchTelecomManager {
     private set
   internal var customCancelValue: String? = null
     private set
+  internal var customCancelReasonField: String? = null
+    private set
 
   // Opts into recognizing the consumer app's own backend's incoming-call
   // push payloads. Until called, every payload is relayed straight to Sinch
@@ -55,10 +57,14 @@ object SinchTelecomManager {
   }
 
   // Opts into recognizing a cancel/end push shaped like the configured
-  // incoming-call push but carrying `typeField == cancelValue`.
-  fun configureCustomCancelCallPush(typeField: String, cancelValue: String) {
+  // incoming-call push but carrying `typeField == cancelValue`. `reasonField`
+  // is optional — if the payload carries one (e.g. "FORWARDED" vs anything
+  // else), it's used to show a distinct missed-vs-forwarded notice instead
+  // of just silently dismissing the ringing notification.
+  fun configureCustomCancelCallPush(typeField: String, cancelValue: String, reasonField: String? = null) {
     customCancelTypeField = typeField
     customCancelValue = cancelValue
+    customCancelReasonField = reasonField
   }
 
   fun phoneAccountHandle(context: Context): PhoneAccountHandle {
@@ -137,7 +143,13 @@ object SinchTelecomManager {
 
   fun reportCallActive(callId: String) {
     connections[callId]?.setActive()
-    appContext?.let { SinchIncomingCallNotification.cancel(it, callId) }
+    appContext?.let { ctx ->
+      // Read before `cancel` below, which forgets the caller name along with
+      // dismissing the ringing notification.
+      val displayName = SinchIncomingCallNotification.displayNameFor(callId)
+      SinchCallForegroundService.start(ctx, callId, displayName)
+      SinchIncomingCallNotification.cancel(ctx, callId)
+    }
   }
 
   fun reportCallEnded(callId: String) {
@@ -147,7 +159,23 @@ object SinchTelecomManager {
     }
     connections.remove(callId)
     externallyReportedCallIds.remove(callId)
-    appContext?.let { SinchIncomingCallNotification.cancel(it, callId) }
+    appContext?.let {
+      SinchIncomingCallNotification.cancel(it, callId)
+      SinchCallForegroundService.stop(it)
+    }
+  }
+
+  // Distinct from `reportCallEnded` (used for every call ending, including a
+  // normal hangup after the call was answered) — this is specifically for a
+  // still-ringing call being called off by a custom cancel push, so unlike a
+  // plain call-ended it's worth telling the rep why the phone stopped
+  // ringing instead of just silently dropping the notification.
+  fun reportCallCancelled(callId: String, reason: String?) {
+    // Must read before `reportCallEnded`, which cancels the ringing
+    // notification and forgets the caller name along with it.
+    val displayName = SinchIncomingCallNotification.displayNameFor(callId)
+    reportCallEnded(callId)
+    appContext?.let { SinchIncomingCallNotification.showCancelledNotice(it, callId, reason, displayName) }
   }
 
   internal fun registerConnection(callId: String, connection: SinchConnection) {

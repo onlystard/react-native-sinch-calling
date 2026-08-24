@@ -100,7 +100,19 @@ export interface Spec extends TurboModule {
   // instead of being reported as a new incoming call. Has no effect until
   // `configureCustomIncomingCallPush` has also been called (there'd be no
   // `callId` field to key off of otherwise).
-  configureCustomCancelCallPush(typeField: string, cancelValue: string): void;
+  // `reasonField` is optional — if your backend's cancel push carries a
+  // reason (e.g. `{ type: "call_cancelled", callId, reason: "FORWARDED" }`),
+  // naming that field here lets a "forwarded" cancel be told apart from any
+  // other reason (declined, hung up, answered elsewhere, ...), which
+  // `onIncomingCallUICancelled` doesn't otherwise distinguish. Android only,
+  // for now — the missed/forwarded notice this drives is a heads-up
+  // notification shown natively when the app is backgrounded/killed; iOS's
+  // system call screen has no equivalent yet.
+  configureCustomCancelCallPush(
+    typeField: string,
+    cancelValue: string,
+    reasonField?: string
+  ): void;
 
   // Reports a system call UI (CallKit / Telecom) for a call your own app
   // logic decided to show — from a custom push, a Socket.IO event, or
@@ -138,6 +150,19 @@ export interface Spec extends TurboModule {
   // optional): `{ enabled?, title?, answerLabel?, declineLabel?, smallIconName? }`
   // — see `IncomingCallNotificationConfig` in `SinchCalling.ts`.
   configureIncomingCallNotification(config: Object): void;
+
+  // Android only. Android 14+ auto-revokes `USE_FULL_SCREEN_INTENT` for apps
+  // it doesn't recognize as a "calling" app — silently, with no callback —
+  // which breaks the lock-screen ring in `SinchIncomingCallNotification`
+  // without any visible error. Always true on iOS and pre-14 Android. Check
+  // this (e.g. on app launch) and call `requestFullScreenIntentPermission`
+  // if it comes back false.
+  isFullScreenIntentPermissionGranted(): boolean;
+
+  // Android only. Opens the system settings screen where the user can
+  // grant/re-grant `USE_FULL_SCREEN_INTENT`. No-op on iOS and pre-14
+  // Android.
+  requestFullScreenIntentPermission(): void;
 
   onClientStarted: CodegenTypes.EventEmitter<void>;
   onClientStartFailed: CodegenTypes.EventEmitter<ClientStartFailedEvent>;

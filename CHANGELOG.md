@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Added
+
+- `configureCustomCancelCallPush`'s optional 3rd argument, `reasonField` (Android only) — names the field on a custom cancel push carrying *why* the call was cancelled. When it's `"FORWARDED"`, Android now leaves behind a distinct "call forwarded" notice once the ringing notification is torn down; every other reason gets a plain "missed call" notice instead of the phone just silently going quiet.
+- The Android incoming-call notification channel now uses the device's actual ringtone (`RingtoneManager.TYPE_RINGTONE`) instead of the default notification sound.
+- Android: a foreground service (`phoneCall`/`microphone` types) now starts automatically the moment a call goes active and stops when it ends, so the app keeps microphone access once backgrounded during a call — required by Android 14's background mic-capture restrictions. Nothing to call from JS; the manifest permissions it needs merge in automatically.
+- `isFullScreenIntentPermissionGranted()` / `requestFullScreenIntentPermission()` (Android only, no-ops elsewhere) — Android 14+ can silently auto-revoke `USE_FULL_SCREEN_INTENT` for apps it doesn't recognize as a "calling" app, which breaks the lock-screen ring with no visible error. Lets a consumer app check for this and prompt the user to re-grant it.
+
 ### Fixed
 
 - Making `SinchCalling.h` public (0.6.1) fixed the missing-symbol error but broke the build a different way: that header pulls in the Codegen-generated `SinchCallingSpec.h`, which requires Objective-C++ — fine for the `.mm` files that already imported it internally, but Clang errors (`Could not build Objective-C module 'SinchCalling'`, `'utility' file not found`, `This file must be compiled as Obj-C++`) trying to build it as this pod's *public* Swift-facing module interface. Moved the one thing that actually needs to be public — `eagerlyRegisterForVoipPush` — onto a new, separate `SinchCallingBootstrap` class with its own header that has no dependency on `SinchCallingSpec.h` at all. `SinchCalling.h` goes back to private.

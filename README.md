@@ -194,8 +194,13 @@ SinchCalling.onCallUIDeclined(({ callId }) => {
 // — reusing the same `idField` for both (a natural design, since both need
 // to say which call they're about) would otherwise make every cancel push
 // look like a new incoming call. Configure the field/value your backend
-// uses to mark a cancel, e.g. `{ type: "call_cancelled", callId, reason }`:
-SinchCalling.configureCustomCancelCallPush('type', 'call_cancelled');
+// uses to mark a cancel, e.g. `{ type: "call_cancelled", callId, reason }`.
+// The optional 3rd arg (Android only) names the field carrying *why* it was
+// cancelled — when it's `"FORWARDED"`, Android leaves behind a distinct
+// "call forwarded" notice instead of a plain "missed call" once the ringing
+// notification is torn down, so the rep isn't left wondering why the phone
+// stopped ringing.
+SinchCalling.configureCustomCancelCallPush('type', 'call_cancelled', 'reason');
 
 // Fires once a cancel push has ended the system call UI natively — clean up
 // any app-side state keyed by `callId` (a pending caller-ID lookup, etc.).
@@ -252,6 +257,28 @@ SinchCalling.configureIncomingCallNotification({ enabled: false });
 
 Tapping the notification body (or its full-screen intent when the device is locked) opens your app's own launcher activity with a `callId` extra — same as any other push notification tap — so your existing navigation/deep-link handling decides what screen to show. Tapping Answer/Decline, by contrast, is handled entirely at the native Telecom layer (via `SinchTelecomManager`, same as a Bluetooth headset button would be) and works even before your JS has started.
 
+### Android: keeping the call's microphone alive in the background
+
+Android 14 (API 34) restricts a backgrounded app from continuing to capture microphone audio unless it's running a foreground service declared with the `phoneCall`/`microphone` types. This library starts one automatically the moment a call goes active and stops it the moment the call ends — nothing to call from JS. It shows its own low-priority "Call in progress" notification for as long as it runs, using the same icon/config as `configureIncomingCallNotification`. The manifest permissions it needs (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_PHONE_CALL`, `FOREGROUND_SERVICE_MICROPHONE`) are declared in the library's own manifest and merge into your app automatically.
+
+### Android: the full-screen-intent permission can be silently revoked
+
+`USE_FULL_SCREEN_INTENT` (what makes the incoming-call notification wake the lock screen) is auto-revoked by Android 14+ for apps the OS doesn't recognize as a "calling" app, as of a January 2025 Play policy change — silently, with no callback to your app. The notification still posts when this happens, it just never launches the full-screen intent, so a call arriving while the device is locked shows nothing until the user unlocks and pulls down the shade — a confusing "calls don't ring" report with no exception to point at.
+
+Check for this (e.g. once at app launch, or whenever your app returns to the foreground) and prompt the user to re-grant it if needed:
+
+```ts
+import { SinchCalling } from 'react-native-sinch-calling';
+
+if (!SinchCalling.isFullScreenIntentPermissionGranted()) {
+  // Show your own explanation first — this opens a system settings screen,
+  // which is disruptive without context.
+  SinchCalling.requestFullScreenIntentPermission();
+}
+```
+
+Both are no-ops that return `true`/do nothing on iOS and on Android below API 34, where the permission is granted at install time and can't be revoked this way.
+
 ### Retrying after a failure
 
 The SDK doesn't expose a distinct "reconnecting" callback — only `onClientStartFailed` (client-level) and `onCallEnded` with `endCause: 'error'` (call-level). Both events include a `code` (native error code) you can use to decide whether to retry:
@@ -280,12 +307,14 @@ SinchCalling.onClientStartFailed(({ code }) => {
 | `enablePushNotifications(useProductionAps)` | iOS | No-op on Android |
 | `relayRemotePushNotification(payload)` | Android | No-op on iOS |
 | `configureCustomIncomingCallPush(idField, displayField)` | both | Opt-in — see [Custom incoming-call flows](#custom-incoming-call-flows) |
-| `configureCustomCancelCallPush(typeField, cancelValue)` | both | Opt-in — distinguishes a cancel/end push from a new-call push, see [Custom incoming-call flows](#custom-incoming-call-flows) |
+| `configureCustomCancelCallPush(typeField, cancelValue, reasonField?)` | both | Opt-in — distinguishes a cancel/end push from a new-call push, see [Custom incoming-call flows](#custom-incoming-call-flows). `reasonField` is Android-only, drives the missed/forwarded notice |
 | `reportIncomingCallUI(callId, displayName)` | both | Shows a call UI for any reason you decide to |
 | `resolveCallUIToConference(callId, conferenceId, callerId)` → `callId` | both | Turns a shown call UI into a real call |
 | `dismissCallUI(callId)` | both | Cleans up a call UI that couldn't be resolved |
 | `updateIncomingCallDisplayName(callId, displayName)` | both | Overrides the shown caller name |
 | `configureIncomingCallNotification({ enabled?, title?, answerLabel?, declineLabel?, smallIconName? })` | Android | Customizes — or disables — the incoming-call notification self-managed connections require on Android; see [Customizing the Android incoming-call notification](#customizing-the-android-incoming-call-notification). No-op on iOS |
+| `isFullScreenIntentPermissionGranted()` → `boolean` | Android | Always `true` on iOS/pre-14 Android; see [The full-screen-intent permission can be silently revoked](#android-the-full-screen-intent-permission-can-be-silently-revoked) |
+| `requestFullScreenIntentPermission()` | Android | Opens system settings to re-grant it. No-op on iOS/pre-14 Android |
 
 Events: `onClientStarted`, `onClientStartFailed`, `onRegistrationCredentialsRequired` (internal — handled by `setRegistrationCredentialsProvider`), `onIncomingCall`, `onCallProgressing`, `onCallEstablished`, `onCallEnded`, `onPushTokenRegistered`, `onPushTokenRegistrationFailed`, `onVoipPushTokenUpdated` (iOS — forward to your backend), `onIncomingCallUIShown`, `onCallUIAnswered`, `onCallUIDeclined`, `onIncomingCallUICancelled`.
 

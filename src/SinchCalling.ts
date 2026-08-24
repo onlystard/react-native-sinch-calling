@@ -192,9 +192,24 @@ class SinchCalling {
    * carrying both the id field and this cancel marker ends the already-shown
    * call UI instead of being reported as a new incoming call. Has no effect
    * until `configureCustomIncomingCallPush` has also been called.
+   *
+   * `reasonField` (Android only) — if your payload also carries a reason
+   * (e.g. `{ ..., reason: 'FORWARDED' }`), naming that field here makes
+   * Android show a distinct "call forwarded" vs "missed call" heads-up
+   * notification instead of just silently dismissing the ringing one.
+   * iOS ignores this; its cancel just ends the CallKit screen already
+   * showing, with no equivalent notice.
    */
-  configureCustomCancelCallPush(typeField: string, cancelValue: string): void {
-    NativeSinchCalling.configureCustomCancelCallPush(typeField, cancelValue);
+  configureCustomCancelCallPush(
+    typeField: string,
+    cancelValue: string,
+    reasonField?: string
+  ): void {
+    NativeSinchCalling.configureCustomCancelCallPush(
+      typeField,
+      cancelValue,
+      reasonField
+    );
   }
 
   /**
@@ -256,6 +271,27 @@ class SinchCalling {
     config: IncomingCallNotificationConfig
   ): void {
     NativeSinchCalling.configureIncomingCallNotification(config);
+  }
+
+  /**
+   * Android only. Android 14+ can silently auto-revoke
+   * `USE_FULL_SCREEN_INTENT`, breaking the lock-screen ring in
+   * `configureIncomingCallNotification` with no visible error. Always
+   * returns `true` on iOS and pre-14 Android. Check on app launch (or
+   * whenever returning to the foreground) and call
+   * `requestFullScreenIntentPermission` if this comes back `false`.
+   */
+  isFullScreenIntentPermissionGranted(): boolean {
+    return NativeSinchCalling.isFullScreenIntentPermissionGranted();
+  }
+
+  /**
+   * Android only. Opens the system settings screen where the user can
+   * grant/re-grant `USE_FULL_SCREEN_INTENT`. No-op on iOS and pre-14
+   * Android.
+   */
+  requestFullScreenIntentPermission(): void {
+    NativeSinchCalling.requestFullScreenIntentPermission();
   }
 
   /** iOS only: hex-encoded PushKit VoIP token, issued on start and on rotation. */

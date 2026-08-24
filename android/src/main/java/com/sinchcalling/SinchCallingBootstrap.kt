@@ -25,6 +25,6 @@ object SinchCallingBootstrap {
   fun eagerlyConfigureCustomIncomingCallPush(context: Context) {
     SinchTelecomManager.registerPhoneAccount(context.applicationContext)
     SinchTelecomManager.configureCustomIncomingCallPush("callId", "callerNumber")
-    SinchTelecomManager.configureCustomCancelCallPush("type", "call_cancelled")
+    SinchTelecomManager.configureCustomCancelCallPush("type", "call_cancelled", "reason")
   }
 }

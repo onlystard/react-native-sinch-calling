@@ -3,6 +3,7 @@ package com.sinchcalling
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
+import com.sinchcalling.telecom.SinchFullScreenIntentPermission
 
 class SinchCallingModule(reactContext: ReactApplicationContext) :
   NativeSinchCallingSpec(reactContext) {
@@ -124,8 +125,8 @@ class SinchCallingModule(reactContext: ReactApplicationContext) :
     callManager.configureCustomIncomingCallPush(idField, displayField)
   }
 
-  override fun configureCustomCancelCallPush(typeField: String, cancelValue: String) {
-    callManager.configureCustomCancelCallPush(typeField, cancelValue)
+  override fun configureCustomCancelCallPush(typeField: String, cancelValue: String, reasonField: String?) {
+    callManager.configureCustomCancelCallPush(typeField, cancelValue, reasonField)
   }
 
   override fun reportIncomingCallUI(callId: String, displayName: String) {
@@ -194,6 +195,14 @@ class SinchCallingModule(reactContext: ReactApplicationContext) :
       declineLabel = if (config.hasKey("declineLabel")) config.getString("declineLabel") else null,
       smallIconName = if (config.hasKey("smallIconName")) config.getString("smallIconName") else null
     )
+  }
+
+  override fun isFullScreenIntentPermissionGranted(): Boolean {
+    return SinchFullScreenIntentPermission.isGranted(reactApplicationContext)
+  }
+
+  override fun requestFullScreenIntentPermission() {
+    SinchFullScreenIntentPermission.request(reactApplicationContext)
   }
 
   companion object {
