@@ -170,7 +170,16 @@ class SinchCallManager(private val context: Context) {
       return
     }
 
-    val result = SinchPush.queryPushNotificationPayload(context.applicationContext, payload)
+    // The consumer app's own unrelated notifications (a task reminder, a new
+    // message, ...) share this same FCM sender and get relayed here too —
+    // `queryPushNotificationPayload` throws for anything that isn't shaped
+    // like a genuine Sinch-issued payload, so a non-call push must not
+    // propagate that as an uncaught native exception up through the bridge.
+    val result = try {
+      SinchPush.queryPushNotificationPayload(context.applicationContext, payload)
+    } catch (error: IllegalArgumentException) {
+      return
+    }
     client?.relayRemotePushNotification(result)
   }
 
