@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- `callPhoneNumberWithHeaders(phoneNumber, callerId, headers)`: a PSTN call that also sends custom call headers (e.g. `{ 'x-cli': callerId }`), which iOS passes to the Sinch SDK. This lets an iOS app choose the caller ID through a header your backend reads (for example from the call's `callheaders` in the Sinch ICE callback), the way the web SDK's `callPhoneNumber(number, headers)` does. Android keeps using `callerId` (its SDK has no per-call headers). `callPhoneNumber` is unchanged, so existing apps are not affected.
+
 - `configureCustomCancelCallPush`'s optional 3rd argument, `reasonField` — names the field on a custom cancel push carrying *why* the call was cancelled. When it's `"FORWARDED"`, both platforms now leave behind a distinct "call forwarded" notice once the ringing call UI is torn down (a heads-up notification on Android, a local notification via a new `SinchMissedCallNotifier` on iOS); every other reason gets a plain "missed call" notice instead of the phone just silently going quiet.
 - The Android incoming-call notification channel now uses the device's actual ringtone (`RingtoneManager.TYPE_RINGTONE`) instead of the default notification sound.
 - Android: a foreground service (`phoneCall`/`microphone` types) now starts automatically the moment a call goes active and stops when it ends, so the app keeps microphone access once backgrounded during a call — required by Android 14's background mic-capture restrictions. Nothing to call from JS; the manifest permissions it needs merge in automatically.

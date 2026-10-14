@@ -102,6 +102,28 @@ class SinchCalling {
   }
 
   /**
+   * PSTN call that also sends custom call headers, e.g. `{ 'x-cli': callerId }`
+   * so your backend can pick the caller ID the way the Sinch web SDK's
+   * `callPhoneNumber(number, headers)` allows.
+   *
+   * iOS: `headers` go to the Sinch SDK and `callerId` is not used by it.
+   * Android: the SDK has no per-call headers, so `callerId` is used and
+   * `headers` is ignored. Pass both to behave the same on both platforms.
+   * `callPhoneNumber` is unchanged.
+   */
+  callPhoneNumberWithHeaders(
+    phoneNumber: string,
+    callerId: string,
+    headers: Record<string, string>
+  ): string {
+    return NativeSinchCalling.callPhoneNumberWithHeaders(
+      phoneNumber,
+      callerId,
+      headers
+    );
+  }
+
+  /**
    * Joins a Sinch conference room by id — e.g. to answer a call your
    * backend parked and bridged into a conference (see `reportIncomingCallUI`
    * / `resolveCallUIToConference`). `callerId` is Android-only, same

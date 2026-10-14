@@ -25,10 +25,5 @@ Pod::Spec.new do |s|
 
   s.dependency "SinchRTC"
 
-  s.pod_target_xcconfig = {
-    "CLANG_ENABLE_MODULES" => "YES",
-    "OTHER_CPLUSPLUSFLAGS" => "$(inherited) -fcxx-modules"
-  }
-
   install_modules_dependencies(s)
 end

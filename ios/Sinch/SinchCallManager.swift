@@ -107,6 +107,15 @@ public final class SinchCallManager: NSObject {
     return call.callId
   }
 
+  // Headers are NSString key/value pairs the Sinch SDK forwards with the call
+  @objc public func callPhoneNumber(_ phoneNumber: String, headers: [String: String]) -> String {
+    guard let call = client?.call().callPhoneNumber(phoneNumber, headers: headers) else {
+      return ""
+    }
+    track(call)
+    return call.callId
+  }
+
   @objc public func callConference(_ conferenceId: String) -> String {
     guard let call = client?.call().callConference(withId: conferenceId) else {
       return ""

@@ -117,6 +117,15 @@ class SinchCallingModule(reactContext: ReactApplicationContext) :
     return callManager.callPhoneNumber(phoneNumber, callerId)
   }
 
+  // The Android SDK has no per-call headers: the caller ID goes through `callerId`
+  override fun callPhoneNumberWithHeaders(
+    phoneNumber: String,
+    callerId: String,
+    headers: ReadableMap
+  ): String {
+    return callManager.callPhoneNumber(phoneNumber, callerId)
+  }
+
   override fun callConference(conferenceId: String, callerId: String): String {
     return callManager.callConference(conferenceId, callerId)
   }

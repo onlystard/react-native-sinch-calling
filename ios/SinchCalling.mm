@@ -1,4 +1,12 @@
 #import <AVFoundation/AVFoundation.h>
+// The Swift-generated header below refers to these frameworks' types. Import
+// them as plain headers so it compiles without clang C++ modules
+// (`-fcxx-modules`), which React Native's prebuilt React framework (0.87+)
+// does not support.
+#import <CallKit/CallKit.h>
+#import <PushKit/PushKit.h>
+#import <UserNotifications/UserNotifications.h>
+#import <SinchRTC/SinchRTC.h>
 
 #import "SinchCalling.h"
 
@@ -98,6 +106,13 @@ static void SinchCallingEnsureSharedManagers(void)
 - (NSString *)callPhoneNumber:(NSString *)phoneNumber callerId:(NSString *)callerId
 {
   return [_callManager callPhoneNumber:phoneNumber];
+}
+
+- (NSString *)callPhoneNumberWithHeaders:(NSString *)phoneNumber
+                                callerId:(NSString *)callerId
+                                 headers:(NSDictionary *)headers
+{
+  return [_callManager callPhoneNumber:phoneNumber headers:headers];
 }
 
 - (NSString *)callConference:(NSString *)conferenceId callerId:(NSString *)callerId

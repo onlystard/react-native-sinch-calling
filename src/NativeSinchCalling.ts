@@ -54,6 +54,15 @@ export interface Spec extends TurboModule {
   // (Android only — the iOS SDK derives it from the application's
   // provisioned voice number and ignores this argument).
   callPhoneNumber(phoneNumber: string, callerId: string): string;
+  // PSTN call that also sends custom call headers (e.g. `{ 'x-cli': '+614...' }`,
+  // which your backend can read from the ICE callback to pick the caller ID).
+  // iOS passes them to the Sinch SDK; Android keeps using `callerId` (the
+  // Android SDK has no per-call header API), so pass both.
+  callPhoneNumberWithHeaders(
+    phoneNumber: string,
+    callerId: string,
+    headers: Object
+  ): string;
   // Joins a Sinch conference room by id (e.g. a backend-bridged PSTN leg).
   // `callerId` is Android-only, same caveat as `callPhoneNumber`.
   callConference(conferenceId: string, callerId: string): string;
