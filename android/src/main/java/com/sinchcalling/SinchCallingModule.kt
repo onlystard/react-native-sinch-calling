@@ -53,6 +53,16 @@ class SinchCallingModule(reactContext: ReactApplicationContext) :
         )
       }
 
+      override fun onCallQualityWarning(callId: String, name: String, triggered: Boolean) {
+        emitOnCallQualityWarning(
+          Arguments.createMap().apply {
+            putString("callId", callId)
+            putString("name", name)
+            putBoolean("triggered", triggered)
+          }
+        )
+      }
+
       override fun onPushTokenRegistered() {
         emitOnPushTokenRegistered()
       }

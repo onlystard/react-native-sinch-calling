@@ -7,6 +7,7 @@ export type {
 export type {
   CallEndedEvent,
   CallEvent,
+  CallQualityWarningEvent,
   ClientStartFailedEvent,
   IncomingCallEvent,
   IncomingCallUICancelledEvent,

@@ -11,6 +11,14 @@ export interface IncomingCallEvent {
   remoteUserId: string;
 }
 
+export interface CallQualityWarningEvent {
+  callId: string;
+  /** Sinch's name for the warning, e.g. HighInboundPacketLoss */
+  name: string;
+  /** true when the warning starts, false when the call recovers */
+  triggered: boolean;
+}
+
 export interface CallEvent {
   callId: string;
 }
@@ -182,6 +190,7 @@ export interface Spec extends TurboModule {
   onCallProgressing: CodegenTypes.EventEmitter<CallEvent>;
   onCallEstablished: CodegenTypes.EventEmitter<CallEvent>;
   onCallEnded: CodegenTypes.EventEmitter<CallEndedEvent>;
+  onCallQualityWarning: CodegenTypes.EventEmitter<CallQualityWarningEvent>;
 
   onPushTokenRegistered: CodegenTypes.EventEmitter<void>;
   onPushTokenRegistrationFailed: CodegenTypes.EventEmitter<ClientStartFailedEvent>;

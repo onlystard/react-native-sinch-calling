@@ -12,6 +12,7 @@ import UIKit
   func sinchCallManagerCallDidProgress(_ callId: String)
   func sinchCallManagerCallDidEstablish(_ callId: String)
   func sinchCallManagerCallDidEnd(_ callId: String, endCause: String)
+  func sinchCallManagerCallQualityWarning(_ callId: String, name: String, triggered: Bool)
 }
 
 private func endCauseString(_ endCause: SINCallEndCause) -> String {
@@ -218,6 +219,10 @@ extension SinchCallManager: SINCallDelegate {
     establishedCallIds.insert(call.callId)
     updateProximityMonitoring()
     delegate?.sinchCallManagerCallDidEstablish(call.callId)
+  }
+
+  public func call(_ call: SINCall, didEmitCallQualityWarningEvent event: SINCallQualityWarningEvent) {
+    delegate?.sinchCallManagerCallQualityWarning(call.callId, name: event.name, triggered: event.type == .trigger)
   }
 
   public func callDidEnd(_ call: SINCall) {

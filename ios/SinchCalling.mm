@@ -257,6 +257,11 @@ static void SinchCallingEnsureSharedManagers(void)
   [self emitOnCallEnded:@{ @"callId" : callId, @"endCause" : endCause }];
 }
 
+- (void)sinchCallManagerCallQualityWarning:(NSString *)callId name:(NSString *)name triggered:(BOOL)triggered
+{
+  [self emitOnCallQualityWarning:@{ @"callId" : callId, @"name" : name, @"triggered" : @(triggered) }];
+}
+
 #pragma mark - SinchCallKitManagerDelegate
 
 - (void)sinchCallKitManagerDidAnswerCall:(NSString *)callId

@@ -15,6 +15,9 @@ import com.sinch.android.rtc.calling.CallControllerListener
 import com.sinch.android.rtc.calling.CallEndCause
 import com.sinch.android.rtc.calling.CallListener
 import com.sinch.android.rtc.calling.MediaConstraints
+import com.sinch.android.rtc.callquality.warnings.CallQualityWarningEvent
+import com.sinch.android.rtc.callquality.warnings.CallQualityWarningEventListener
+import com.sinch.android.rtc.callquality.warnings.CallQualityWarningEventType
 import com.sinchcalling.telecom.SinchIncomingCallNotification
 import com.sinchcalling.telecom.SinchTelecomListener
 import com.sinchcalling.telecom.SinchTelecomManager
@@ -29,6 +32,7 @@ interface SinchCallManagerListener {
   fun onCallProgressing(callId: String)
   fun onCallEstablished(callId: String)
   fun onCallEnded(callId: String, endCause: String)
+  fun onCallQualityWarning(callId: String, name: String, triggered: Boolean)
 
   fun onPushTokenRegistered()
   fun onPushTokenRegistrationFailed(message: String, code: Int)
@@ -389,5 +393,16 @@ class SinchCallManager(private val context: Context) {
   private fun track(call: Call) {
     calls[call.callId] = call
     call.addCallListener(callListener)
+    call.qualityController.addCallQualityWarningEventListener(
+      object : CallQualityWarningEventListener {
+        override fun onCallQualityWarningEvent(event: CallQualityWarningEvent) {
+          listener?.onCallQualityWarning(
+            call.callId,
+            event.name,
+            event.type == CallQualityWarningEventType.Trigger
+          )
+        }
+      }
+    )
   }
 }

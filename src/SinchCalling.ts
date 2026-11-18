@@ -1,6 +1,7 @@
 import type { EventSubscription } from 'react-native';
 import NativeSinchCalling, {
   type CallEndedEvent,
+  type CallQualityWarningEvent,
   type CallEvent,
   type ClientStartFailedEvent,
   type IncomingCallEvent,
@@ -170,6 +171,13 @@ class SinchCalling {
 
   onCallEnded(listener: (event: CallEndedEvent) => void): EventSubscription {
     return NativeSinchCalling.onCallEnded(listener);
+  }
+
+  /** Sinch's call-quality warnings (jitter, packet loss, ...) and their recovery. */
+  onCallQualityWarning(
+    listener: (event: CallQualityWarningEvent) => void
+  ): EventSubscription {
+    return NativeSinchCalling.onCallQualityWarning(listener);
   }
 
   /** Android only. Call before `configure()`. No-op on iOS. */
