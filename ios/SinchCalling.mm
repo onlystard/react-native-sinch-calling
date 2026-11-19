@@ -120,9 +120,10 @@ static void SinchCallingEnsureSharedManagers(void)
   return [_callManager callConference:conferenceId];
 }
 
-- (BOOL)sendDTMF:(NSString *)callId key:(NSString *)key
+- (NSNumber *)sendDTMF:(NSString *)callId key:(NSString *)key
 {
-  return [_callManager sendDTMF:callId key:key];
+  // the codegen spec returns NSNumber for a boolean: a BOOL here crashes the call
+  return @([_callManager sendDTMF:callId key:key]);
 }
 
 - (void)configureCustomIncomingCallPush:(NSString *)idField displayField:(NSString *)displayField
@@ -171,11 +172,11 @@ static void SinchCallingEnsureSharedManagers(void)
   // Android only — iOS uses CallKit's own system UI, nothing to customize here.
 }
 
-- (BOOL)isFullScreenIntentPermissionGranted
+- (NSNumber *)isFullScreenIntentPermissionGranted
 {
   // Android only — this whole permission concept doesn't exist on iOS,
   // which uses CallKit's own system UI (no equivalent revocable permission).
-  return YES;
+  return @YES;
 }
 
 - (void)requestFullScreenIntentPermission
